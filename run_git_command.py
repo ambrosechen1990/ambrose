@@ -21,8 +21,8 @@ def upload_to_github(local_folder, repo_url):
     # 提交文件
     run_git_command(["commit", "-m", "Initial commit"])
 
-    # 推送到 GitHub
-    run_git_command(["push", "-u", "origin", "master"])
+    # 推送到 GitHub，改为使用 main 分支
+    run_git_command(["push", "-u", "origin", "main"])
 
 # 使用时传入本地文件夹和 GitHub 仓库地址
 upload_to_github("your-local-folder-path", "https://github.com/ambrosechen1990/ambrose.git")

@@ -5,7 +5,7 @@ def run_git_command(command):
     git_path = r"C:\Program Files\Git\cmd\git.EXE"  # 指定 Git 的完整路径
     try:
         result = subprocess.run([git_path] + command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                text=True)
+                                text=True, encoding='utf-8')
         print(result.stdout)
     except subprocess.CalledProcessError as e:
         print(f"Error: {e.stderr}")

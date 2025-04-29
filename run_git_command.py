@@ -30,11 +30,20 @@ def upload_to_github(local_folder, repo_url):
         # 如果没有设置远程仓库，则添加远程仓库
         run_git_command(["remote", "add", "origin", repo_url], cwd=local_folder)
 
+    # 检查当前是否存在分支
+    try:
+        run_git_command(["branch"], cwd=local_folder)  # 查看本地分支
+    except subprocess.CalledProcessError:
+        # 如果没有分支，则创建并切换到 'main' 分支
+        print("没有本地分支，创建并切换到 'main' 分支")
+        run_git_command(["checkout", "-b", "main"], cwd=local_folder)  # 创建并切换到 main 分支
+
     # 拉取远程仓库的最新代码，以防止冲突
     try:
         run_git_command(["pull", "origin", "main", "--rebase"], cwd=local_folder)  # 拉取并合并远程的最新提交
-    except subprocess.CalledProcessError as e:
-        print(f"拉取远程仓库时出错: {e.stderr}")
+    except subprocess.CalledProcessError:
+        # 如果远程仓库不存在，则跳过此步骤
+        print("远程仓库不存在，跳过拉取步骤。")
 
     # 添加本地更改的文件
     run_git_command(["add", "."], cwd=local_folder)  # 添加所有文件到暂存区

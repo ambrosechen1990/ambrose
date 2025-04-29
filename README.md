@@ -1,2 +1,0 @@
-# ambrose
-Upload Warehouse Test

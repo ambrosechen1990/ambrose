@@ -3,66 +3,61 @@ import subprocess
 
 # 执行 Git 命令的函数
 def run_git_command(command, cwd=None):
-    git_path = "git"  # 在 macOS 上，直接用'git'，系统会在PATH中查找
+    git_path = "git"  # 使用系统PATH中的git
     try:
-        # 运行 Git 命令并获取输出
         result = subprocess.run([git_path] + command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                text=True, encoding='utf-8', cwd=cwd)  # 使用 cwd 参数指定工作目录
-        print(result.stdout)  # 打印标准输出
+                                text=True, encoding='utf-8', cwd=cwd)
+        print(result.stdout)
+        return result
     except subprocess.CalledProcessError as e:
-        # 如果命令执行出错，打印错误信息
         print(f"错误: {e.stderr}")
+        raise e
 
-# 上传文件至 GitHub 的主函数
+# 上传到GitHub的主要流程
 def upload_to_github(local_folder, repo_url):
-    # 1. 检查本地文件夹是否存在
+    # 检查路径是否存在
     if not os.path.isdir(local_folder):
         print(f"错误: 文件夹 {local_folder} 不存在！请确认路径是否正确。")
         return
 
-    # 2. 切换到本地项目文件夹
-    run_git_command(["init"], cwd=local_folder)  # 初始化Git仓库（如果已初始化会检测无害）
+    # 初始化仓库
+    run_git_command(["init"], cwd=local_folder)
 
-    # 3. 检查是否已经设置了远程仓库
+    # 检查是否已设置远程仓库（只在未设置时添加）
     try:
         run_git_command(["remote", "get-url", "origin"], cwd=local_folder)
-    except subprocess.CalledProcessError:
-        # 没有设置远程，则添加
+        print("已存在远程仓库，跳过添加远程步骤。")
+    except:
+        print("没有找到远程仓库，添加远程：", repo_url)
         run_git_command(["remote", "add", "origin", repo_url], cwd=local_folder)
 
-    # 4. 检查本地分支
-    try:
-        run_git_command(["branch"], cwd=local_folder)
-    except subprocess.CalledProcessError:
-        # 如果没有任何分支，创建一个 'main' 分支
-        print("没有本地分支，创建并切换到 'main' 分支")
-        run_git_command(["checkout", "-b", "main"], cwd=local_folder)
+    # 设置全局用户信息（建议只做一次，或者在全局配置中设置好）
+    # run_git_command(["config", "--global", "user.name", "你的名字"])
+    # run_git_command(["config", "--global", "user.email", "你的邮箱"])
 
-    # 5. 拉取远程代码，避免冲突（如果远程不存在会出错）
-    try:
-        run_git_command(["pull", "origin", "main", "--rebase"], cwd=local_folder)
-    except subprocess.CalledProcessError:
-        print("远程仓库不存在，跳过拉取步骤。")
-
-    # 6. 添加所有改动
+    # 添加文件
     run_git_command(["add", "."], cwd=local_folder)
 
-    # 7. 提交
-    # 可以在提交前检测是否有改动，否则提交会失败
+    # 提交（如果没有改动会出错，可捕获异常）
     try:
         run_git_command(["commit", "-m", "自动化提交"], cwd=local_folder)
-    except subprocess.CalledProcessError:
-        print("没有变化，不需要提交。")
+    except:
+        print("没有新变化或提交失败（可能无变化），跳过此步。")
+        pass
 
-    # 8. 推送到远程仓库
-    run_git_command(["push", "-u", "origin", "main"], cwd=local_folder)
+    # 推送到远程仓库
+    try:
+        run_git_command(["push", "-u", "origin", "main"], cwd=local_folder)
+        print("推送成功！")
+    except Exception as e:
+        print(f"推送失败！请确认远程仓库正确，且有权限。错误信息：{e}")
 
-# 使用示例
-local_path = "/Users/ambrose/Desktop/iot/test_Galaxy S24 Ultra"  # 你的路径
-repo_url = "https://github.com/ambrosechen1990/ambrose.git"  # 你的仓库地址
+# 具体使用示例
+local_path = "/Users/ambrose/Desktop/iot/test_Galaxy S24 Ultra"  # 你的本地路径
+repo_url = "https://github.com/ambrosechen1990/ambrose.git"  # 你的GitHub仓库地址
 
-# 运行前，确认路径存在
+# 确认路径存在
 if os.path.isdir(local_path):
     upload_to_github(local_path, repo_url)
 else:
-    print(f"路径不存在：{local_path}，请确认路径正确！")
+    print(f"路径不存在：{local_path}，请确认路径是否正确！")

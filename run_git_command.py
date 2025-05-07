@@ -1,12 +1,12 @@
 import os
 import subprocess
 
+
 def run_git_command(command, cwd=None):
     """执行git命令的函数"""
-    git_executable = "git"  # 确保git在系统PATH中
     try:
         result = subprocess.run(
-            [git_executable] + command,
+            command,
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -19,11 +19,12 @@ def run_git_command(command, cwd=None):
         print(f"错误: {e.stderr}")
         raise
 
+
 def commit_local_changes(local_dir):
     """提交本地更改以避免合并冲突"""
     try:
         # 添加所有更改
-        run_git_command(["add", "."], cwd=local_dir)
+        run_git_command(["git", "add", "."], cwd=local_dir)
 
         # 检查是否有任何更改被暂存
         result = subprocess.run(
@@ -40,11 +41,12 @@ def commit_local_changes(local_dir):
             return
 
         # 有变化则提交
-        run_git_command(["commit", "-m", "临时保存未提交的更改"], cwd=local_dir)
+        run_git_command(["git", "commit", "-m", "临时保存未提交的更改"], cwd=local_dir)
 
     except subprocess.CalledProcessError as e:
         print(f"提交错误：{e.stderr}")
         raise
+
 
 def pull_and_push_to_github(local_dir, user_name, repo_name):
     """配置远程，拉取，提交，推送流程"""
@@ -62,14 +64,14 @@ def pull_and_push_to_github(local_dir, user_name, repo_name):
         return
 
     # 初始化仓库（如果已初始化无影响）
-    run_git_command(["init"], cwd=local_dir)
+    run_git_command(["git", "init"], cwd=local_dir)
 
     # 确认远程仓库设置
     try:
-        run_git_command(["remote", "get-url", "origin"], cwd=local_dir)
+        run_git_command(["git", "remote", "get-url", "origin"], cwd=local_dir)
         print("远程已存在，跳过添加。")
     except:
-        run_git_command(["remote", "set-url", "origin", remote_url], cwd=local_dir)
+        run_git_command(["git", "remote", "set-url", "origin", remote_url], cwd=local_dir)
 
     # 提交本地未提交更改
     try:
@@ -80,31 +82,19 @@ def pull_and_push_to_github(local_dir, user_name, repo_name):
 
     # 拉取远程更改以确保同步
     try:
-        run_git_command(["pull", "origin", "main", "--allow-unrelated-histories"], cwd=local_dir)
+        run_git_command(["git", "pull", "origin", "main", "--allow-unrelated-histories"], cwd=local_dir)
         print("成功拉取远程更新。")
     except Exception as e:
         print(f"拉取失败：{e}")
         return
 
-    # 添加文件
-    run_git_command(["add", "."], cwd=local_dir)
-
-    # 提交
+    # 推送更改
     try:
-        run_git_command(["commit", "-m", "自动提交"], cwd=local_dir)
-    except subprocess.CalledProcessError as e:
-        if "nothing to commit" in e.stderr:
-            print("没有变更，跳过提交。")
-        else:
-            print(f"提交错误：{e.stderr}")
-            return
-
-    # 推送
-    try:
-        run_git_command(["push", "-u", "origin", "main"], cwd=local_dir)
+        run_git_command(["git", "push", "-u", "origin", "main"], cwd=local_dir)
         print("推送成功！")
     except Exception as e:
         print(f"推送失败：{e}")
+
 
 # 使用示例
 if __name__ == "__main__":

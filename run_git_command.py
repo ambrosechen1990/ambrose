@@ -11,7 +11,6 @@ def run_git_command(command, cwd=None):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            encoding='utf-8',
             cwd=cwd
         )
         print(result.stdout)
@@ -23,14 +22,29 @@ def run_git_command(command, cwd=None):
 def commit_local_changes(local_dir):
     """提交本地更改以避免合并冲突"""
     try:
+        # 添加所有更改
         run_git_command(["add", "."], cwd=local_dir)
-        run_git_command(["commit", "-m", "临时保存未提交的更改"], cwd=local_dir)
-    except subprocess.CalledProcessError as e:
-        if "nothing to commit" in e.stderr:
+
+        # 检查是否有任何更改被暂存
+        result = subprocess.run(
+            ["git", "diff", "--cached", "--exit-code"],
+            cwd=local_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+
+        # 如果 git diff 返回代码为 0，说明没有变化
+        if result.returncode == 0:
             print("没有未提交的更改。")
-        else:
-            print(f"提交错误：{e.stderr}")
-            raise
+            return
+
+        # 有变化则提交
+        run_git_command(["commit", "-m", "临时保存未提交的更改"], cwd=local_dir)
+
+    except subprocess.CalledProcessError as e:
+        print(f"提交错误：{e.stderr}")
+        raise
 
 def pull_and_push_to_github(local_dir, user_name, repo_name):
     """配置远程，拉取，提交，推送流程"""

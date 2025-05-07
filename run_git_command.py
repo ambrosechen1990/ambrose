@@ -20,8 +20,20 @@ def run_git_command(command, cwd=None):
         print(f"错误: {e.stderr}")
         raise
 
-def push_to_github(local_dir, user_name, repo_name):
-    """配置远程，提交，推送流程"""
+def commit_local_changes(local_dir):
+    """提交本地更改以避免合并冲突"""
+    try:
+        run_git_command(["add", "."], cwd=local_dir)
+        run_git_command(["commit", "-m", "临时保存未提交的更改"], cwd=local_dir)
+    except subprocess.CalledProcessError as e:
+        if "nothing to commit" in e.stderr:
+            print("没有未提交的更改。")
+        else:
+            print(f"提交错误：{e.stderr}")
+            raise
+
+def pull_and_push_to_github(local_dir, user_name, repo_name):
+    """配置远程，拉取，提交，推送流程"""
     token = os.getenv('GITHUB_TOKEN')
     if not token:
         print("请先设置环境变量 GITHUB_TOKEN")
@@ -38,13 +50,27 @@ def push_to_github(local_dir, user_name, repo_name):
     # 初始化仓库（如果已初始化无影响）
     run_git_command(["init"], cwd=local_dir)
 
-    # 检查远程是否存在
+    # 确认远程仓库设置
     try:
         run_git_command(["remote", "get-url", "origin"], cwd=local_dir)
         print("远程已存在，跳过添加。")
     except:
-        # 设置远程远地址带Token
         run_git_command(["remote", "set-url", "origin", remote_url], cwd=local_dir)
+
+    # 提交本地未提交更改
+    try:
+        commit_local_changes(local_dir)
+    except Exception as e:
+        print(f"提交本地更改失败：{e}")
+        return
+
+    # 拉取远程更改以确保同步
+    try:
+        run_git_command(["pull", "origin", "main", "--allow-unrelated-histories"], cwd=local_dir)
+        print("成功拉取远程更新。")
+    except Exception as e:
+        print(f"拉取失败：{e}")
+        return
 
     # 添加文件
     run_git_command(["add", "."], cwd=local_dir)
@@ -52,8 +78,12 @@ def push_to_github(local_dir, user_name, repo_name):
     # 提交
     try:
         run_git_command(["commit", "-m", "自动提交"], cwd=local_dir)
-    except:
-        print("没有变更，跳过提交。")
+    except subprocess.CalledProcessError as e:
+        if "nothing to commit" in e.stderr:
+            print("没有变更，跳过提交。")
+        else:
+            print(f"提交错误：{e.stderr}")
+            return
 
     # 推送
     try:
@@ -62,13 +92,12 @@ def push_to_github(local_dir, user_name, repo_name):
     except Exception as e:
         print(f"推送失败：{e}")
 
-# 脚本使用示例
+# 使用示例
 if __name__ == "__main__":
     local_dir = "/Users/ambrose/Desktop/iot/test_Galaxy S24 Ultra"  # 你的本地路径
     user_name = "ambrosechen1990"
     repo_name = "ambrose"
-    # 确保已设置环境变量： export GITHUB_TOKEN=你的Token
     if os.path.isdir(local_dir):
-        push_to_github(local_dir, user_name, repo_name)
+        pull_and_push_to_github(local_dir, user_name, repo_name)
     else:
         print(f"路径不存在：{local_dir}")

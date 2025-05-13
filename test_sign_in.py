@@ -1,19 +1,31 @@
 import pytest
 import time
 import traceback
-<<<<<<< HEAD
-=======
-import git
->>>>>>> c263dab006127d42009422f68bfb010a61e7af64
 from appium import webdriver
 from appium.webdriver.common.appiumby import AppiumBy
 from appium.options.android import UiAutomator2Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import functools
+import os
 
-<<<<<<< HEAD
 # 全局变量保存options配置
 options = None
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+    if report.when == 'call' and report.failed:
+        instance = getattr(item, 'instance', None)
+        if instance:
+            driver = getattr(instance, 'driver', None)
+            if driver:
+                # 定义文件名，包含测试用例名称和时间戳
+                filename = f"screenshots/{item.name}_{int(time.time())}.png"
+                os.makedirs(os.path.dirname(filename), exist_ok=True)
+                driver.save_screenshot(filename)
+                print(f"失败截图已保存：{filename}")
 
 
 @pytest.fixture(scope='session')
@@ -90,50 +102,6 @@ class TestCase:
 
     def logout(self):
         # 退出登录的操作
-=======
-# 定义一个 Pytest 的 fixture，用于初始化和关闭 Appium driver，作用域为 class
-@pytest.fixture(scope="class")
-def driver(request):
-    # 设置 Appium 的配置参数
-    options = UiAutomator2Options()
-    options.platformName = "Android"  # 指定平台名称
-    options.platform_version = "14"  # 指定 Android 系统版本
-    options.device_name = "Galaxy S24 Ultra"  # 指定设备名称
-    options.app_package = "com.xingmai.tech"  # 应用包名
-    options.app_activity = "com.xingmai.splash.SplashActivity"  # 启动入口 Activity
-    options.no_reset = True  # 启动 app 时不重置应用状态
-    options.automation_name = "UiAutomator2"  # 指定使用的自动化框架
-    options.full_context_list = True  # 获取所有上下文（用于混合应用 H5/原生）
-
-    print('driver连接appium服务器,并打开app')
-    # 创建并连接到 Appium Server，返回 driver 实例
-    driver_instance = webdriver.Remote('http://127.0.0.1:4723/wd/hub', options=options)
-
-    # 将 driver 实例注入到测试类中（赋值给 self.driver）
-    request.cls.driver = driver_instance
-
-    # yield 语句之前的代码在测试开始前执行，之后的在测试结束后执行（如关闭 driver）
-    yield
-    driver_instance.quit()
-
-# 使用上面的 fixture 注入 driver 到测试类中
-@pytest.mark.usefixtures("driver")
-class TestCase:
-
-    def teardown_method(self):
-        """用例后执行退出（如果在已登录状态）"""
-        try:
-            # 如果在登录后页面，尝试点击“More” → “Logout”
-            more = self.driver.find_elements(AppiumBy.XPATH, "//android.view.View[@content-desc='More']")
-            if more:
-                print("🚪 Detected login state, preparing to logout...")
-                self.logout()
-        except Exception as e:
-            print("❌ Logout skipped or failed.")
-            traceback.print_exc()
-
-    def logout(self):
->>>>>>> c263dab006127d42009422f68bfb010a61e7af64
         try:
             more_button = WebDriverWait(self.driver, 5).until(
                 EC.element_to_be_clickable((AppiumBy.XPATH, "//android.view.View[@content-desc='More']"))
@@ -151,7 +119,6 @@ class TestCase:
                 EC.element_to_be_clickable((AppiumBy.XPATH, "//android.widget.TextView[@text='Confirm']"))
             )
             confirm_button.click()
-<<<<<<< HEAD
             print("✅ 退出登录成功")
             time.sleep(2)
         except:
@@ -170,17 +137,6 @@ class TestCase:
 
     # 验证APP首页登录功能按钮
     def test_signin_01(self):
-=======
-            print("✅ Logout successful.")
-            time.sleep(2)
-        except Exception as logout_e:
-            print(f"⚠️ Logout failed: {logout_e}")
-            traceback.print_exc()
-
-    # 验证APP首页登录功能按钮
-    def test_signin_01(self):
-        """验证APP首页登录功能按钮"""
->>>>>>> c263dab006127d42009422f68bfb010a61e7af64
         try:
             # Check if already logged in
             more_button = self.driver.find_elements(AppiumBy.XPATH, "//android.view.View[@content-desc='More']")
@@ -208,10 +164,6 @@ class TestCase:
 
     #验证登录页面到APP首页的“返回键”
     def test_signin_02(self):
-<<<<<<< HEAD
-=======
-        """验证APP首页登录功能按钮"""
->>>>>>> c263dab006127d42009422f68bfb010a61e7af64
         try:
             # Check if already logged in
             more_button = self.driver.find_elements(AppiumBy.XPATH, "//android.view.View[@content-desc='More']")
@@ -221,24 +173,16 @@ class TestCase:
                 time.sleep(2)  # Wait for logout to complete
 
             print("Sign In back")
-<<<<<<< HEAD
             # 查找并点击首页中的 “Sign In” 按钮（使用 XPath 定位）
             self.driver.find_element(AppiumBy.XPATH,
                                      "//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[1]").click()
             # 等待 3 秒确保跳转页面加载完成
             time.sleep(3)
-=======
-            # 设置隐式等待，最多等 3 秒
-            self.driver.implicitly_wait(3)
->>>>>>> c263dab006127d42009422f68bfb010a61e7af64
             # 查找Sign In页中的 “Back” 按钮（使用 XPath 定位）
             self.driver.find_element(AppiumBy.XPATH,
                                  "//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View").click()
             # 等待 3 秒确保跳转页面加载完成
-<<<<<<< HEAD
             time.sleep(3)
-=======
->>>>>>> c263dab006127d42009422f68bfb010a61e7af64
             # 查找跳转后页面的标题“Sign In”文本元素，获取其 text 属性
             title1 = self.driver.find_element(AppiumBy.XPATH,
                                          '//android.widget.TextView[@text="Sign In"]').get_attribute('text')

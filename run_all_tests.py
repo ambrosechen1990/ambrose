@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import sys
 import pytest
 
@@ -11,7 +10,7 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-=======
+
 import pytest
 
 if __name__ == "__main__":
@@ -22,4 +21,4 @@ if __name__ == "__main__":
         "--capture=sys",               # 允许 print 输出显示在报告中
         "-v"                           # 显示详细信息
     ])
->>>>>>> c263dab006127d42009422f68bfb010a61e7af64
+

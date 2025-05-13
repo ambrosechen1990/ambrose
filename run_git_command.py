@@ -12,8 +12,18 @@ def run_command(command, cwd=None):
         return True
     except subprocess.CalledProcessError as e:
         print(f"❌ Git 操作失败： {e}")
-        print(e.stderr)
+        if e.stderr:
+            print(f"错误信息: {e.stderr}")
         return False
+
+
+def check_git_remote():
+    try:
+        result = subprocess.run(['git', 'remote', '-v'], capture_output=True, text=True, check=True)
+        print("当前 Git 远程仓库配置:")
+        print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print("❌ 检查远程仓库失败：", e.stderr)
 
 
 def main():
@@ -23,6 +33,9 @@ def main():
     import os
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
+
+    # 检查远程仓库配置
+    check_git_remote()
 
     # Git 操作流程
     if not run_command(['git', 'add', '.']):

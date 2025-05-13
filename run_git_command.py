@@ -1,25 +1,37 @@
 import subprocess
-import os
+import sys
+from datetime import datetime
 
-def run_git_commands():
-    # 切换到当前脚本所在目录（iot）
-    project_dir = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(project_dir)
 
+def run_command(command, cwd=None):
     try:
-        # 添加所有更改
-        subprocess.run(["git", "add", "."], check=True)
-
-        # 提交更改（你也可以把提交信息做成动态的）
-        subprocess.run(["git", "commit", "-m", "Auto commit: update all subfolders"], check=True)
-
-        # 推送到远程仓库（默认使用 main 分支）
-        subprocess.run(["git", "push", "origin", "main"], check=True)
-
-        print("✅ Git push 成功")
-
+        result = subprocess.run(command, cwd=cwd, check=True, capture_output=True, text=True)
+        print(f"✅ 成功: {' '.join(command)}")
+        if result.stdout:
+            print(result.stdout)
+        return True
     except subprocess.CalledProcessError as e:
-        print("❌ Git 操作失败：", e)
+        print(f"❌ Git 操作失败： {e}")
+        print(e.stderr)
+        return False
+
+
+def main():
+    commit_message = f"Auto commit at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+
+    # 切换到脚本所在目录（确保是在项目根目录下）
+    import os
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
+
+    # Git 操作流程
+    if not run_command(['git', 'add', '.']):
+        sys.exit(1)
+    if not run_command(['git', 'commit', '-m', commit_message]):
+        print("⚠️ 没有改动可提交")
+    if not run_command(['git', 'push', 'origin', 'main']):
+        sys.exit(1)
+
 
 if __name__ == "__main__":
-    run_git_commands()
+    main()

@@ -34,10 +34,23 @@ def pytest_runtest_makereport(item, call):
 # ========================
 # Appium driver 启动与关闭（session 级别，只执行一次）
 # ========================
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="class")
 def setup_driver():
     global options
     options = UiAutomator2Options()
+
+    # 从配置文件读取bundleId
+    bundle_id = "com.xingmai.tech"  # 默认值
+    try:
+        bundle_id_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bundle_id.txt")
+        if os.path.exists(bundle_id_file):
+            with open(bundle_id_file, "r") as f:
+                bundle_id = f.read().strip()
+            print(f"✅ 成功读取bundleId配置: {bundle_id}")
+        else:
+            print(f"⚠️ 未找到bundleId配置文件，使用默认值: {bundle_id}")
+    except Exception as e:
+        print(f"⚠️ 读取bundleId配置出错: {e}")
 
     # iOS 配置项
     options.set_capability("platformName", "iOS")
@@ -45,11 +58,15 @@ def setup_driver():
     options.set_capability("deviceName", "iPhone 16 Plus")
     options.set_capability("automationName", "XCUITest")
     options.set_capability("udid", "00008140-000648C82ED0801C")
-    options.set_capability("bundleId", "com.xingmai.tech")
+    options.set_capability("bundleId", bundle_id)
     options.set_capability("includeSafariInWebviews", True)
     options.set_capability("newCommandTimeout", 3600)
     options.set_capability("connectHardwareKeyboard", True)
 
+    # 将bundle_id保存为options对象的一个属性，方便后续使用
+    options.bundleId = bundle_id
+
+    print(f"🚀 正在连接到设备，使用bundleId: {bundle_id}")
     # 创建 driver 实例，确保每次都重新创建
     driver = webdriver.Remote('http://127.0.0.1:4723', options=options)
 
@@ -210,7 +227,7 @@ class TestCase:
             print(f"❌ Test failed: {e}")
             traceback.print_exc()
 
-    #验证登录页面到APP首页的“返回键”
+    #验证登录页面到APP首页的"返回键"
     def test_signin_02(self):
         driver = self.driver
         try:
@@ -287,7 +304,7 @@ class TestCase:
             traceback.print_exc()
             assert False, f"Test failed due to: {e}"
 
-    #验证“登录”按钮，初始状态为浅色，不可点击
+    #验证"登录"按钮，初始状态为浅色，不可点击
     def test_signin_04(self):
         """验证APP首页登录功能按钮"""
         try:
@@ -318,7 +335,7 @@ class TestCase:
             traceback.print_exc()
             assert False, f"Test failed due to: {e}"
 
-    # 验证正确账号，密码为空，无法登录，提示“账号或密码错误，请确认后重试。”
+    # 验证正确账号，密码为空，无法登录，提示"账号或密码错误，请确认后重试。"
     def test_signin_05(self):
         """验证APP首页登录功能按钮"""
         try:
@@ -362,7 +379,7 @@ class TestCase:
             traceback.print_exc()
             assert False, f"Test failed due to: {e}"
 
-    #验证正确账号，密码填写错误，无法登录，提示“账号或密码错误，请确认后重试。”
+    #验证正确账号，密码填写错误，无法登录，提示"账号或密码错误，请确认后重试。"
     def test_signin_06(self):
         """验证APP首页登录功能按钮"""
         try:
@@ -394,7 +411,7 @@ class TestCase:
             self.driver.find_element(AppiumBy.XPATH,
                                      '//XCUIElementTypeButton[@name="Sign In"]').click()
             time.sleep(5)
-            # 断言仍停留在当前页面”Incorrect account or password. Please check and try again.“
+            # 断言仍停留在当前页面"Incorrect account or password. Please check and try again."
             title = self.driver.find_element(AppiumBy.XPATH,
                                          '//XCUIElementTypeStaticText[@name="Incorrect account or password. Please check and try again."]').get_attribute('label')
             # 断言跳转是否成功
@@ -405,7 +422,7 @@ class TestCase:
             traceback.print_exc()
             assert False, f"Test failed due to: {e}"
 
-    # 验证正确密码，账号为空，无法登录，提示“账号或密码错误，请确认后重试。”
+    # 验证正确密码，账号为空，无法登录，提示"账号或密码错误，请确认后重试。"
     def test_signin_07(self):
         """验证APP首页登录功能按钮"""
         try:
@@ -449,7 +466,7 @@ class TestCase:
             traceback.print_exc()
             assert False, f"Test failed due to: {e}"
 
-    # 验证正确密码，账号其他账号-已注册账号，无法登录，提示“账号或密码错误，请确认后重试。”
+    # 验证正确密码，账号其他账号-已注册账号，无法登录，提示"账号或密码错误，请确认后重试。"
     def test_signin_08(self):
         """验证APP首页登录功能按钮"""
         try:
@@ -481,7 +498,7 @@ class TestCase:
             self.driver.find_element(AppiumBy.XPATH,
                                      '//XCUIElementTypeButton[@name="Sign In"]').click()
             time.sleep(3)
-            # 断言仍停留在当前页面”Incorrect account or password. Please check and try again.“
+            # 断言仍停留在当前页面"Incorrect account or password. Please check and try again."
             title = self.driver.find_element(AppiumBy.XPATH,
                                              '//XCUIElementTypeStaticText[@name="Incorrect account or password. Please check and try again."]').get_attribute(
                 'label')
@@ -493,7 +510,7 @@ class TestCase:
             traceback.print_exc()
             assert False, f"Test failed due to: {e}"
 
-    # 验证正确密码，账号其他账号-未注册账号，无法登录，提示“账号或密码错误，请确认后重试。”
+    # 验证正确密码，账号其他账号-未注册账号，无法登录，提示"This email is not registered. Please check and re-enter."
     def test_signin_09(self):
         """验证APP首页登录功能按钮"""
         try:
@@ -525,7 +542,7 @@ class TestCase:
             self.driver.find_element(AppiumBy.XPATH,
                                      '//XCUIElementTypeButton[@name="Sign In"]').click()
             time.sleep(3)
-            # 断言仍停留在当前页面”This email is not registered. Please check and re-enter.“
+            # 断言仍停留在当前页面"This email is not registered. Please check and re-enter."
             title = self.driver.find_element(AppiumBy.XPATH,
                                              '//XCUIElementTypeStaticText[@name="This email is not registered. Please check and re-enter."]').get_attribute('label')
             # 断言跳转是否成功
@@ -536,7 +553,7 @@ class TestCase:
             traceback.print_exc()
             assert False, f"Test failed due to: {e}"
 
-    # 验证清空账号的“×”按钮，可以清空账号
+    # 验证清空账号的"×"按钮，可以清空账号
     def test_signin_10(self):
         """验证APP首页登录功能按钮"""
         try:
@@ -587,7 +604,7 @@ class TestCase:
             traceback.print_exc()
             assert False, f"Test failed due to: {e}"
 
-    # 验证清空密码的“×”按钮，可以清空密码
+    # 验证清空密码的"×"按钮，可以清空密码
     def test_signin_11(self):
         """验证APP首页登录功能按钮"""
         try:
@@ -678,6 +695,53 @@ class TestCase:
             field_type = password_input_visible.get_attribute("type")
             print(f"当前输入框类型: {field_type}")
             assert field_type == "XCUIElementTypeTextField", "❌ 密码未明文显示"
+        except Exception as e:
+            print(f"Test failed: {e}")
+            traceback.print_exc()
+            assert False, f"Test failed due to: {e}"
+
+    # 验证正确密码，账号无效账号，无法登录，提示"账号或密码错误，请确认后重试。"
+    def test_signin_13(self):
+        """验证APP首页登录功能按钮"""
+        try:
+            # 如果已登录，先退出
+            more_button = self.driver.find_elements(AppiumBy.XPATH, '//XCUIElementTypeButton[@name="mine"]')
+            if more_button:
+                print("🚪 Already logged in, logging out first...")
+                self.teardown_method()
+                time.sleep(2)
+
+            print("点击 Sign In 按钮")
+            self.driver.implicitly_wait(3)
+            self.driver.find_element(AppiumBy.XPATH,
+                                         '//XCUIElementTypeButton[@name="Sign In"]').click()
+            time.sleep(3)
+            # 跳转寻找Email和Password输入框
+            email_input = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((AppiumBy.IOS_PREDICATE, 'type == "XCUIElementTypeTextField"'))
+            )
+            email_input.click()
+            email_input.send_keys("1@#￥%…1@ccdxc.com")
+            password_input = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((AppiumBy.IOS_PREDICATE, 'type == "XCUIElementTypeSecureTextField"'))
+                )
+            password_input.clear()
+            password_input.send_keys("csx150128")
+            time.sleep(3)
+
+            # 找到 Sign In 按钮
+            sign_in_btn = self.driver.find_element(AppiumBy.XPATH, '//XCUIElementTypeButton[@name="Sign In"]')
+
+            # 断言按钮不可点击
+            assert sign_in_btn.get_attribute("enabled") == "false", "Sign In 按钮在未填写时应为不可点击"
+
+            # 可选：确认仍停留在当前页面
+            title = self.driver.find_element(AppiumBy.XPATH,
+                                             '//XCUIElementTypeStaticText[@name="Forgot password"]').get_attribute(
+                'label')
+            assert title == "Forgot password", "应仍在登录页面"
+
+            print("验证通过：Sign In 按钮在未填写账号密码时无法点击")
         except Exception as e:
             print(f"Test failed: {e}")
             traceback.print_exc()
